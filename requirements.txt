@@ -9,5 +9,5 @@ Jinja2==3.0.3
 MarkupSafe==2.0.1
 PyJWT==2.3.0
 pymongo==4.0.1
-pywin32==303
+pywin32
 Werkzeug==2.0.2
