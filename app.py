@@ -1,14 +1,22 @@
+from datetime import timedelta
+from flask_jwt_extended.utils import get_jwt
 import pymongo
 from flask import Flask, json, jsonify, request
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token
 from pymongo import MongoClient
 import configparser
 
+# 20220104 Add feature:revoke token
+'''
+import redis
+ACCESS_EXPIRES = timedelta(hours=1)
+'''
+
 config = configparser.ConfigParser()
 config.read('config.ini')
 
 # locl MongoDB create db and collection
-client = MongoClient(config.get('mongodb-url','url'))
+client = MongoClient(config.get('mongodb-url','dev_url'))
 db = client["app_database"]
 user = db["User"]
 
@@ -18,6 +26,11 @@ jwt = JWTManager(app)
 
 # JWT config
 app.config["JWT_SECRET_KEY"] = "hello-my-name-is-leo"
+
+# 20220104 Add feature:revoke token
+'''
+app.config["JWT_ACCESS_TOKEN_EXPIRES"] = ACCESS_EXPIRES
+'''
 
 @app.route("/register", methods=["POST"])
 def register():
@@ -49,10 +62,32 @@ def login():
     else:
         return jsonify(message="Bad Email or Password"), 401
 
+# 20220104 Add feature:revoke token
+'''
+jwt_redis_blocklist = redis.StrictRedis(
+    host="localhost",port=6379,db=0,decode_responses=True
+)
+
+# 20220104 Add feature:revoke token
+@jwt.token_in_blocklist_loader
+def check_if_token_is_revoked(jwt_header, jwt_payload):
+    jti = jwt_payload["jti"]
+    token_in_redis = jwt_redis_blocklist.get(jti)
+    return token_in_redis is not None
+
+# 20220104 Add feature:revoke token
+@app.route("/logout", methods=["DELETE"])
+@jwt_required()
+def logout():
+    jti = get_jwt()["jti"]
+    jwt_redis_blocklist.set(jti, "", ex=ACCESS_EXPIRES)
+    return jsonify(message="Access token revoked")
+'''
+
 @app.route("/dashboard")
 @jwt_required()
 def dashboard():
     return jsonify(message="Welcome!")
 
 if __name__ == "__main__":
-    app.run(host="localhost", debug=True)
+    app.run()
