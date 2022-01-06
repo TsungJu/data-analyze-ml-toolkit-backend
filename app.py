@@ -6,6 +6,8 @@ from flask_jwt_extended import JWTManager, jwt_required, create_access_token
 from pymongo import MongoClient
 import configparser
 
+import datetime
+
 # 20220104 Add feature:revoke token
 '''
 import redis
@@ -42,7 +44,8 @@ def register():
         first_name = request.form["first_name"]
         last_name = request.form["last_name"]
         password = request.form["password"]
-        user_info = dict(first_name=first_name,last_name=last_name,email=email,password=password)
+        created_on = datetime.datetime.now()
+        user_info = dict(first_name=first_name,last_name=last_name,email=email,password=password,created_on=created_on,last_login=created_on)
         user.insert_one(user_info)
         return jsonify(message="User added sucessfully"), 201
 
@@ -58,6 +61,7 @@ def login():
     test = user.find_one({"email":email,"password":password})
     if test:
         access_token = create_access_token(identity=email)
+        user.update_one({"email":email,"password":password},{'$set':{"last_login":datetime.datetime.now()}})
         return jsonify(message="Login Succeeded!",access_token=access_token), 201
     else:
         return jsonify(message="Bad Email or Password"), 401
