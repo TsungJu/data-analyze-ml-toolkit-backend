@@ -2,37 +2,52 @@ from datetime import timedelta
 from flask_jwt_extended.utils import get_jwt
 import pymongo
 from flask import Flask, json, jsonify, request
-from flask_jwt_extended import JWTManager, jwt_required, create_access_token
+from flask_jwt_extended import JWTManager, jwt_required, create_access_token, decode_token
 from pymongo import MongoClient
 import configparser
-
+import bcrypt
+from jwt.exceptions import DecodeError, InvalidTokenError
 import datetime
+# from flask_mail import Mail
+# For flask logging
+from logging.config import dictConfig
+dictConfig({
+    'version': 1,
+    'formatters': {'default': {
+        'format': '[%(asctime)s] %(levelname)s in %(module)s: %(message)s',
+    }},
+    'handlers': {'wsgi': {
+        'class': 'logging.StreamHandler',
+        'stream': 'ext://flask.logging.wsgi_errors_stream',
+        'formatter': 'default'
+    }},
+    'root': {
+        'level': 'INFO',
+        'handlers': ['wsgi']
+    }
+})
 
 # 20220104 Add feature:revoke token
-'''
-import redis
+# import redis
 ACCESS_EXPIRES = timedelta(hours=1)
-'''
 
 config = configparser.ConfigParser()
 config.read('config.ini')
-
 # locl MongoDB create db and collection
-client = MongoClient(config.get('mongodb-url','url_pro'))
+client = MongoClient(config.get('mongodb-url','url_dev'))
 db = client["app_database"]
 user = db["User"]
 
 # Create a Flask app and configure it
 app = Flask(__name__)
 jwt = JWTManager(app)
+# mail = Mail(app)
 
 # JWT config
 app.config["JWT_SECRET_KEY"] = "hello-my-name-is-leo"
 
 # 20220104 Add feature:revoke token
-'''
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = ACCESS_EXPIRES
-'''
 
 @app.route("/register", methods=["POST"])
 def register():
@@ -43,7 +58,7 @@ def register():
     else:
         first_name = request.form["first_name"]
         last_name = request.form["last_name"]
-        password = request.form["password"]
+        password = bcrypt.hashpw((request.form["password"]).encode('utf-8'), bcrypt.gensalt())
         created_on = datetime.datetime.now()
         user_info = dict(first_name=first_name,last_name=last_name,email=email,password=password,created_on=created_on,last_login=created_on)
         user.insert_one(user_info)
@@ -57,11 +72,12 @@ def login():
     else:
         email = request.form["email"]
         password = request.form["password"]
-    
-    test = user.find_one({"email":email,"password":password})
-    if test:
+
+    test = user.find_one({"email":email})
+    app.logger.info(test)
+    if bcrypt.checkpw(password.encode('utf-8'), test['password']):
         access_token = create_access_token(identity=email)
-        user.update_one({"email":email,"password":password},{'$set':{"last_login":datetime.datetime.now()}})
+        user.update_one({"email":email},{'$set':{"last_login":datetime.datetime.now()}})
         return jsonify(message="Login Succeeded!",access_token=access_token), 201
     else:
         return jsonify(message="Bad Email or Password"), 401
@@ -87,6 +103,29 @@ def logout():
     jwt_redis_blocklist.set(jti, "", ex=ACCESS_EXPIRES)
     return jsonify(message="Access token revoked")
 '''
+
+@app.route("/forgot", methods=["POST"])
+def forgot_password():
+    email = request.form["email"]
+    test = user.find_one({"email":email})
+    if not test:
+        return jsonify(message="email not Exist"), 404
+    else:
+        reset_token = create_access_token(identity=email)
+        return jsonify(reset_token=reset_token), 201
+
+@app.route("/reset",methods=['POST'])
+def reset_password():
+    try:
+        new_password = bcrypt.hashpw((request.form["new_password"]).encode('utf-8'), bcrypt.gensalt())
+        reset_token = request.form["reset_token"]
+        email = decode_token(reset_token)['sub']
+        user.update_one({"email":email},{'$set':{"password":new_password}})
+        return jsonify(message="Reset password success!"), 201
+    except DecodeError:
+        raise DecodeError("DecodeError")
+    except InvalidTokenError:
+        raise InvalidTokenError("InvalidTokenError")
 
 @app.route("/dashboard")
 @jwt_required()
