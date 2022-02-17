@@ -25,7 +25,7 @@ ACCESS_EXPIRES = timedelta(hours=1)
 config = configparser.ConfigParser()
 config.read('config.ini')
 # locl MongoDB create db and collection
-client = MongoClient(config.get('mongodb-url','url_dev'))
+client = MongoClient(config.get('mongodb-url','url_pro'))
 db = client["app_database"]
 user = db["User"]
 
