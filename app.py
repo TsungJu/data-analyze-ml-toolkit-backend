@@ -182,7 +182,7 @@ def login():
         schema:
           $ref: '#/definitions/Login_Message'
         examples:
-          token: "su3cp3",
+          token: "su3cp3"
           message: "Login Succeeded!"
     """
     if request.is_json:
