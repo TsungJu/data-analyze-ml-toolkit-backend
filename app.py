@@ -1,31 +1,22 @@
 from datetime import timedelta
-from flask_jwt_extended.utils import get_jwt
+from distutils.command.upload import upload
+# from flask_jwt_extended.utils import get_jwt
 import pymongo
-from flask import Flask, json, jsonify, request
+from flask import Flask, json, jsonify, request, redirect, url_for, flash, send_from_directory, render_template
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token, decode_token
 from pymongo import MongoClient
 import configparser
 import bcrypt
 from jwt.exceptions import DecodeError, InvalidTokenError
 import datetime
-# from flask_mail import Mail
-# For flask logging
-from logging.config import dictConfig
-dictConfig({
-    'version': 1,
-    'formatters': {'default': {
-        'format': '[%(asctime)s] %(levelname)s in %(module)s: %(message)s',
-    }},
-    'handlers': {'wsgi': {
-        'class': 'logging.StreamHandler',
-        'stream': 'ext://flask.logging.wsgi_errors_stream',
-        'formatter': 'default'
-    }},
-    'root': {
-        'level': 'INFO',
-        'handlers': ['wsgi']
-    }
-})
+# For file upload
+from werkzeug.utils import secure_filename
+import os
+import pandas as pd
+
+# For file upload
+UPLOAD_FOLDER = 'C:/Users/leolee/Documents/flask-jwt-api/data'
+ALLOWED_EXTENSIONS = {'txt','pdf','png','jpg','jpeg', 'gif','csv'}
 
 # 20220104 Add feature:revoke token
 # import redis
@@ -41,15 +32,77 @@ user = db["User"]
 # Create a Flask app and configure it
 app = Flask(__name__)
 jwt = JWTManager(app)
-# mail = Mail(app)
 
 # JWT config
 app.config["JWT_SECRET_KEY"] = "hello-my-name-is-leo"
+# For flash session
+app.secret_key = "my-name-is-leo"
+
+# For file upload
+app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
+app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024
 
 # 20220104 Add feature:revoke token
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = ACCESS_EXPIRES
 
-@app.route("/register", methods=["POST"])
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.',1)[1].lower() in ALLOWED_EXTENSIONS
+
+@app.route('/upload', methods=['GET','POST'])
+@jwt_required()
+def upload_file():
+    if request.method == 'POST':
+        if 'file' not in request.files:
+            # flash('No file part')
+            return redirect(request.url)
+    
+        file = request.files['file']
+        # app.logger.info(test)
+        #df = pd.read_csv(file)
+        #print(df)
+        if file.filename == '':
+            # flash('No selected file')
+            return redirect(request.url)
+        
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            token = request.headers['Authorization'].split(' ')[1]
+            email = decode_token(token)['sub']
+            first_name=user.find_one({"email":email})['first_name']
+            path= 'data/'+first_name+'/'
+            if not os.path.exists(path):
+                os.makedirs(path)
+            file.save(os.path.join(path,filename))
+            return jsonify(message=filename+" Upload sucessfully"), 201
+            #return redirect(url_for('uploaded_file',filename=filename))
+    
+    return render_template('upload.html')
+'''
+@app.route('/uploads/<filename>')
+def uploaded_file(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'],filename)
+'''
+@app.route('/download/<filename>', methods=['GET'])
+@jwt_required()
+def download(filename):
+    token = request.headers['Authorization'].split(' ')[1]
+    email = decode_token(token)['sub']
+    first_name=user.find_one({"email":email})['first_name']
+    path= 'data/'+first_name
+    return send_from_directory(path,filename, as_attachment=True)
+
+@app.route('/delete/<filename>', methods=['DELETE'])
+@jwt_required()
+def delete(filename):
+    token = request.headers['Authorization'].split(' ')[1]
+    email = decode_token(token)['sub']
+    first_name=user.find_one({"email":email})['first_name']
+    path= 'data/'+first_name+'/'
+    if os.path.exists(path):
+        os.remove(path+filename)
+    return jsonify(message=filename+" Delete sucessfully"), 200
+
+@app.route('/register', methods=['POST'])
 def register():
     email = request.form["email"]
     test = user.find_one({"email":email})
@@ -64,7 +117,7 @@ def register():
         user.insert_one(user_info)
         return jsonify(message="User added sucessfully"), 201
 
-@app.route("/login", methods=["POST"])
+@app.route('/login', methods=['POST'])
 def login():
     if request.is_json:
         email = request.json["email"]
@@ -104,7 +157,7 @@ def logout():
     return jsonify(message="Access token revoked")
 '''
 
-@app.route("/forgot", methods=["POST"])
+@app.route('/forgot', methods=['POST'])
 def forgot_password():
     email = request.form["email"]
     test = user.find_one({"email":email})
@@ -114,7 +167,7 @@ def forgot_password():
         reset_token = create_access_token(identity=email)
         return jsonify(reset_token=reset_token), 201
 
-@app.route("/reset",methods=['POST'])
+@app.route('/reset',methods=['POST'])
 def reset_password():
     try:
         new_password = bcrypt.hashpw((request.form["new_password"]).encode('utf-8'), bcrypt.gensalt())
@@ -127,10 +180,10 @@ def reset_password():
     except InvalidTokenError:
         raise InvalidTokenError("InvalidTokenError")
 
-@app.route("/dashboard")
+@app.route('/dashboard')
 @jwt_required()
 def dashboard():
     return jsonify(message="Welcome!")
 
-if __name__ == "__main__":
-    app.run()
+# if __name__ == "__main__":
+#    app.run()
