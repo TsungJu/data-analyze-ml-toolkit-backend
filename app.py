@@ -9,6 +9,7 @@ import configparser
 import bcrypt
 from jwt.exceptions import DecodeError, InvalidTokenError
 import datetime
+from flasgger import Swagger
 # For file upload
 from werkzeug.utils import secure_filename
 import os
@@ -32,6 +33,7 @@ user = db["User"]
 # Create a Flask app and configure it
 app = Flask(__name__)
 jwt = JWTManager(app)
+swagger = Swagger(app)
 
 # JWT config
 app.config["JWT_SECRET_KEY"] = "hello-my-name-is-leo"
@@ -87,6 +89,7 @@ def uploaded_file(filename):
 def download(filename):
     token = request.headers['Authorization'].split(' ')[1]
     email = decode_token(token)['sub']
+    print(decode_token(token))
     first_name=user.find_one({"email":email})['first_name']
     path= 'data/'+first_name
     return send_from_directory(path,filename, as_attachment=True)
@@ -104,6 +107,40 @@ def delete(filename):
 
 @app.route('/register', methods=['POST'])
 def register():
+    """Endpoint for register user
+    This is using docstrings for specifications.
+    ---
+    parameters:
+      - name: email
+        in: formData
+        type: string
+        required: true
+      - name: password
+        in: formData
+        type: string
+        required: true
+      - name: first_name
+        in: formData
+        type: string
+        required: true
+      - name: last_name
+        in: formData
+        type: string
+        required: true
+    definitions:
+      Register_Message:
+        type: object
+        properties:
+          message:
+            type: string
+    responses:
+      201:
+        description: User added sucessfully message
+        schema:
+          $ref: '#/definitions/Register_Message'
+        examples:
+          message:"User added sucessfully"
+    """
     email = request.form["email"]
     test = user.find_one({"email":email})
     if test:
@@ -119,6 +156,35 @@ def register():
 
 @app.route('/login', methods=['POST'])
 def login():
+    """Endpoint for user login
+    This is using docstrings for specifications.
+    ---
+    parameters:
+      - name: email
+        in: formData
+        type: string
+        required: true
+      - name: password
+        in: formData
+        type: string
+        required: true
+    definitions:
+      Login_Message:
+        type: object
+        properties:
+          token:
+            type: string
+          message:
+            type: string
+    responses:
+      200:
+        description: User login sucessfully message
+        schema:
+          $ref: '#/definitions/Login_Message'
+        examples:
+          token: "su3cp3",
+          message: "Login Succeeded!"
+    """
     if request.is_json:
         email = request.json["email"]
         password = request.json["password"]
@@ -131,7 +197,7 @@ def login():
     if bcrypt.checkpw(password.encode('utf-8'), test['password']):
         access_token = create_access_token(identity=email)
         user.update_one({"email":email},{'$set':{"last_login":datetime.datetime.now()}})
-        return jsonify(message="Login Succeeded!",access_token=access_token), 201
+        return jsonify(message="Login Succeeded!",access_token=access_token), 200
     else:
         return jsonify(message="Bad Email or Password"), 401
 
