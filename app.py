@@ -39,7 +39,7 @@ swagger_template = dict(
         'version':'0.1',
         'description':'This document depicts a flask jwt api Swagger ui document.',
     },
-    host = 'localhost:5000',
+    host = 'leonardapi.herokuapp.com',
     tags = [
         {
             'name':'User',
