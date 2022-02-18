@@ -33,7 +33,35 @@ user = db["User"]
 # Create a Flask app and configure it
 app = Flask(__name__)
 jwt = JWTManager(app)
-swagger = Swagger(app)
+swagger_template = dict(
+    info = {
+        'title':'flask jwt api Swagger UI Document',
+        'version':'0.1',
+        'description':'This document depicts a flask jwt api Swagger ui document.',
+    },
+    host = 'localhost:5000',
+    tags = [
+        {
+            'name':'User',
+            'description':'User related Features'
+        }
+    ]
+)
+swagger_config = {
+    'headers':[],
+    'specs':[
+        {
+            'endpoint':'flask_jwt_api_swagger_ui',
+            'route':'/flask_jwt_api_swagger_ui.json',
+            'rule_filter': lambda rule: True,
+            'model_filter': lambda tag: True,
+        }
+    ],
+    'static_url_path':'/flasgger_static',
+    'swagger_ui': True,
+    'specs_route':'/apidocs/'
+}
+swagger = Swagger(app,template=swagger_template,config=swagger_config)
 
 # JWT config
 app.config["JWT_SECRET_KEY"] = "hello-my-name-is-leo"
@@ -75,7 +103,7 @@ def upload_file():
             if not os.path.exists(path):
                 os.makedirs(path)
             file.save(os.path.join(path,filename))
-            return jsonify(message=filename+" Upload sucessfully"), 201
+            return jsonify(message=filename+" Upload successfully"), 201
             #return redirect(url_for('uploaded_file',filename=filename))
     
     return render_template('upload.html')
@@ -103,13 +131,15 @@ def delete(filename):
     path= 'data/'+first_name+'/'
     if os.path.exists(path):
         os.remove(path+filename)
-    return jsonify(message=filename+" Delete sucessfully"), 200
+    return jsonify(message=filename+" Delete successfully"), 200
 
 @app.route('/register', methods=['POST'])
 def register():
-    """Endpoint for register user
+    """Endpoint for user register
     This is using docstrings for specifications.
     ---
+    tags:
+      - 'User'
     parameters:
       - name: email
         in: formData
@@ -128,18 +158,18 @@ def register():
         type: string
         required: true
     definitions:
-      Register_Message:
+      register_successfully_message:
         type: object
         properties:
           message:
             type: string
     responses:
       201:
-        description: User added sucessfully message
+        description: User register successfully message
         schema:
-          $ref: '#/definitions/Register_Message'
+          $ref: '#/definitions/register_successfully_message'
         examples:
-          message:"User added sucessfully"
+          application/json: { "message": "User Register Successfully" }
     """
     email = request.form["email"]
     test = user.find_one({"email":email})
@@ -152,13 +182,15 @@ def register():
         created_on = datetime.datetime.now()
         user_info = dict(first_name=first_name,last_name=last_name,email=email,password=password,created_on=created_on,last_login=created_on)
         user.insert_one(user_info)
-        return jsonify(message="User added sucessfully"), 201
+        return jsonify(message="User Register Successfully"), 201
 
 @app.route('/login', methods=['POST'])
 def login():
     """Endpoint for user login
     This is using docstrings for specifications.
     ---
+    tags:
+      - 'User'
     parameters:
       - name: email
         in: formData
@@ -169,21 +201,20 @@ def login():
         type: string
         required: true
     definitions:
-      Login_Message:
+      login_successfully_message:
         type: object
         properties:
-          token:
-            type: string
           message:
+            type: string
+          access_token:
             type: string
     responses:
       200:
-        description: User login sucessfully message
+        description: User login successfully message
         schema:
-          $ref: '#/definitions/Login_Message'
+          $ref: '#/definitions/login_successfully_message'
         examples:
-          token: "su3cp3"
-          message: "Login Succeeded!"
+          application/json: { "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTY0NTA3NjUxMywianRpIjoiZDg3ODIyNzUtYWNjNC00NGNmLTgwZjYtMTVlM2QwMjQ1NzkyIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6ImUyODUxNzFAaG90bWFpbC5jb20iLCJuYmYiOjE2NDUwNzY1MTMsImV4cCI6MTY0NTA4MDExM30.RC3kwHfQOXjL4WbWU2BL2W-82kP4BLsJsAKK35zflmI", "message": "Login Successfully" }
     """
     if request.is_json:
         email = request.json["email"]
@@ -197,7 +228,7 @@ def login():
     if bcrypt.checkpw(password.encode('utf-8'), test['password']):
         access_token = create_access_token(identity=email)
         user.update_one({"email":email},{'$set':{"last_login":datetime.datetime.now()}})
-        return jsonify(message="Login Succeeded!",access_token=access_token), 200
+        return jsonify(message="Login Successfully",access_token=access_token), 200
     else:
         return jsonify(message="Bad Email or Password"), 401
 
@@ -225,6 +256,36 @@ def logout():
 
 @app.route('/forgot', methods=['POST'])
 def forgot_password():
+    """Endpoint for user forgot password
+    This is using docstrings for specifications.
+    ---
+    tags:
+      - 'User'
+    parameters:
+      - name: email
+        in: formData
+        type: string
+        required: true
+    definitions:
+      reset_token_message:
+        type: object
+        properties:
+          reset_token:
+            type: string
+    responses:
+      404:
+        description: Email not exist message
+        schema:
+          $ref: '#/definitions/register_successfully_message'
+        examples:
+          application/json: { "message": "email not Exist" }
+      201:
+        description: Email exist response reset token
+        schema:
+          $ref: '#/definitions/reset_token_message'
+        examples:
+          application/json: { "reset_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTY0NTA3NjUxMywianRpIjoiZDg3ODIyNzUtYWNjNC00NGNmLTgwZjYtMTVlM2QwMjQ1NzkyIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6ImUyODUxNzFAaG90bWFpbC5jb20iLCJuYmYiOjE2NDUwNzY1MTMsImV4cCI6MTY0NTA4MDExM30.RC3kwHfQOXjL4WbWU2BL2W-82kP4BLsJsAKK35zflmI" }
+    """
     email = request.form["email"]
     test = user.find_one({"email":email})
     if not test:
@@ -235,12 +296,34 @@ def forgot_password():
 
 @app.route('/reset',methods=['POST'])
 def reset_password():
+    """Endpoint for user reset password
+    This is using docstrings for specifications.
+    ---
+    tags:
+      - 'User'
+    parameters:
+      - name: new_password
+        in: formData
+        type: string
+        required: true
+      - name: reset_token
+        in: formData
+        type: string
+        required: true
+    responses:
+      201:
+        description: Reset password success
+        schema:
+          $ref: '#/definitions/register_successfully_message'
+        examples:
+          application/json: { "message": "Reset password success" }
+    """
     try:
         new_password = bcrypt.hashpw((request.form["new_password"]).encode('utf-8'), bcrypt.gensalt())
         reset_token = request.form["reset_token"]
         email = decode_token(reset_token)['sub']
         user.update_one({"email":email},{'$set':{"password":new_password}})
-        return jsonify(message="Reset password success!"), 201
+        return jsonify(message="Reset password success"), 201
     except DecodeError:
         raise DecodeError("DecodeError")
     except InvalidTokenError:
