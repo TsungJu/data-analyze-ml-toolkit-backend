@@ -1,45 +1,29 @@
-from datetime import timedelta
-from distutils.command.upload import upload
-# from flask_jwt_extended.utils import get_jwt
-import pymongo
-from flask import Flask, json, jsonify, request, redirect, url_for, flash, send_from_directory, render_template
-from flask_jwt_extended import JWTManager, jwt_required, create_access_token, decode_token
-from pymongo import MongoClient
-import configparser
+from flask import jsonify, request, url_for, render_template
+from flask_jwt_extended import JWTManager,jwt_required, create_access_token, decode_token
 import bcrypt
 from jwt.exceptions import DecodeError, InvalidTokenError
-import datetime
 from flasgger import Swagger
-# For file upload
-from werkzeug.utils import secure_filename
-import os
-import pandas as pd
-
-# For file upload
-UPLOAD_FOLDER = 'C:/Users/leolee/Documents/flask-jwt-api/data'
-ALLOWED_EXTENSIONS = {'txt','pdf','png','jpg','jpeg', 'gif','csv'}
+import datetime
+from datetime import timedelta
+from .. import app, user
 
 # 20220104 Add feature:revoke token
 # import redis
 ACCESS_EXPIRES = timedelta(hours=1)
+# 20220104 Add feature:revoke token
+app.config["JWT_ACCESS_TOKEN_EXPIRES"] = ACCESS_EXPIRES
 
-config = configparser.ConfigParser()
-config.read('config.ini')
-# locl MongoDB create db and collection
-client = MongoClient(config.get('mongodb-url','url_pro'))
-db = client["app_database"]
-user = db["User"]
-
-# Create a Flask app and configure it
-app = Flask(__name__)
+# JWT config
+app.config["JWT_SECRET_KEY"] = "LEONARD-JWT-SECRET-KEY"
 jwt = JWTManager(app)
+
 swagger_template = dict(
     info = {
         'title':'flask jwt api Swagger UI Document',
         'version':'0.1',
         'description':'This document depicts a flask jwt api Swagger ui document.',
     },
-    host = 'leonardapi.herokuapp.com',
+    host = app.config['SWAGGER_HOST'],
     tags = [
         {
             'name':'User',
@@ -47,6 +31,7 @@ swagger_template = dict(
         }
     ]
 )
+
 swagger_config = {
     'headers':[],
     'specs':[
@@ -62,76 +47,6 @@ swagger_config = {
     'specs_route':'/apidocs/'
 }
 swagger = Swagger(app,template=swagger_template,config=swagger_config)
-
-# JWT config
-app.config["JWT_SECRET_KEY"] = "hello-my-name-is-leo"
-# For flash session
-app.secret_key = "my-name-is-leo"
-
-# For file upload
-app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
-app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024
-
-# 20220104 Add feature:revoke token
-app.config["JWT_ACCESS_TOKEN_EXPIRES"] = ACCESS_EXPIRES
-
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.',1)[1].lower() in ALLOWED_EXTENSIONS
-
-@app.route('/upload', methods=['GET','POST'])
-@jwt_required()
-def upload_file():
-    if request.method == 'POST':
-        if 'file' not in request.files:
-            # flash('No file part')
-            return redirect(request.url)
-    
-        file = request.files['file']
-        # app.logger.info(test)
-        #df = pd.read_csv(file)
-        #print(df)
-        if file.filename == '':
-            # flash('No selected file')
-            return redirect(request.url)
-        
-        if file and allowed_file(file.filename):
-            filename = secure_filename(file.filename)
-            token = request.headers['Authorization'].split(' ')[1]
-            email = decode_token(token)['sub']
-            first_name=user.find_one({"email":email})['first_name']
-            path= 'data/'+first_name+'/'
-            if not os.path.exists(path):
-                os.makedirs(path)
-            file.save(os.path.join(path,filename))
-            return jsonify(message=filename+" Upload successfully"), 201
-            #return redirect(url_for('uploaded_file',filename=filename))
-    
-    return render_template('upload.html')
-'''
-@app.route('/uploads/<filename>')
-def uploaded_file(filename):
-    return send_from_directory(app.config['UPLOAD_FOLDER'],filename)
-'''
-@app.route('/download/<filename>', methods=['GET'])
-@jwt_required()
-def download(filename):
-    token = request.headers['Authorization'].split(' ')[1]
-    email = decode_token(token)['sub']
-    print(decode_token(token))
-    first_name=user.find_one({"email":email})['first_name']
-    path= 'data/'+first_name
-    return send_from_directory(path,filename, as_attachment=True)
-
-@app.route('/delete/<filename>', methods=['DELETE'])
-@jwt_required()
-def delete(filename):
-    token = request.headers['Authorization'].split(' ')[1]
-    email = decode_token(token)['sub']
-    first_name=user.find_one({"email":email})['first_name']
-    path= 'data/'+first_name+'/'
-    if os.path.exists(path):
-        os.remove(path+filename)
-    return jsonify(message=filename+" Delete successfully"), 200
 
 @app.route('/register', methods=['POST'])
 def register():
@@ -333,6 +248,3 @@ def reset_password():
 @jwt_required()
 def dashboard():
     return jsonify(message="Welcome!")
-
-# if __name__ == "__main__":
-#    app.run()
