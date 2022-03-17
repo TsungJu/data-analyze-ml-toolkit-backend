@@ -29,7 +29,14 @@ swagger_template = dict(
             'name':'User',
             'description':'User related Features'
         }
-    ]
+    ],
+    securityDefinitions = {
+      'Bearer': {
+        'type':'apiKey',
+        'name':'Authorization',
+        'in':'header'
+      }
+    }
 )
 
 swagger_config = {
