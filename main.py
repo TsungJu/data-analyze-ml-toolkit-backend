@@ -1,5 +1,5 @@
 from app import app
-from app.view import auth, file
+from app.view import analyzing, auth, file, modeling
 
 @app.cli.command()
 def test():

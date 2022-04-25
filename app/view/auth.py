@@ -28,6 +28,18 @@ swagger_template = dict(
         {
             'name':'User',
             'description':'User related Features'
+        },
+        {
+            'name':'File',
+            'description':'File related Features'
+        },
+        {
+            'name':'Analyzing',
+            'description':'Analyzing related Features'
+        },
+        {
+            'name':'Modeling',
+            'description':'Modeling related Features'
         }
     ],
     securityDefinitions = {

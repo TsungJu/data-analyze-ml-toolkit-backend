@@ -4,9 +4,11 @@ from werkzeug.utils import secure_filename
 import os
 from os import listdir
 import pandas as pd
+import matplotlib.pyplot as plt
+import sys
 from .. import app, user
 
-ALLOWED_EXTENSIONS = {'txt','pdf','png','jpg','jpeg', 'gif','csv'}
+ALLOWED_EXTENSIONS = {'csv'}
 app.config['UPLOAD_FOLDER'] = 'app/data/'
 app.config['DOWNLOAD_FOLDER'] = 'data/'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
@@ -17,7 +19,7 @@ def allowed_file(filename):
 @app.route('/upload', methods=['POST'])
 @jwt_required()
 def upload_file():
-    """Endpoint for upload file
+    """Endpoint for upload csv file and analyzing data
     This is using docstrings for specifications.
     ---
     tags:
@@ -61,8 +63,9 @@ def upload_file():
             if not os.path.exists(path):
                 os.makedirs(path)
             file.save(os.path.join(path,filename))
-            #df = pd.read_csv(file)
-            #app.logger.info(df)
+            #df = pd.read_csv(os.path.join(path,filename))
+            #df.plot()
+            #plt.savefig(os.path.join(path,"test.png"))
             return jsonify(message=filename+" Upload successfully"), 201
             #return redirect(url_for('uploaded_file',filename=filename))
 
