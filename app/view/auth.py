@@ -1,5 +1,5 @@
 from flask import jsonify, request, url_for, render_template
-from flask_jwt_extended import JWTManager,jwt_required, create_access_token, decode_token
+from flask_jwt_extended import JWTManager,jwt_required, create_access_token, decode_token, get_jwt
 import bcrypt
 from jwt.exceptions import DecodeError, InvalidTokenError
 from flasgger import Swagger
@@ -7,10 +7,8 @@ import datetime
 from datetime import timedelta
 from .. import app, user
 
-# 20220104 Add feature:revoke token
-# import redis
+import redis
 ACCESS_EXPIRES = timedelta(hours=1)
-# 20220104 Add feature:revoke token
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = ACCESS_EXPIRES
 
 # JWT config
@@ -166,27 +164,39 @@ def login():
     else:
         return jsonify(message="Bad Email or Password"), 401
 
-# 20220104 Add feature:revoke token
-'''
-jwt_redis_blocklist = redis.StrictRedis(
-    host="localhost",port=6379,db=0,decode_responses=True
-)
+# 20220704 Add Feature:revoke token
+#jwt_redis_blocklist = redis.StrictRedis(
+#    host="localhost",port=6379,db=0,decode_responses=True
+#)
+jwt_redis_blocklist = redis.Redis.from_url(app.config['REDIS_URL'])
 
-# 20220104 Add feature:revoke token
 @jwt.token_in_blocklist_loader
 def check_if_token_is_revoked(jwt_header, jwt_payload):
     jti = jwt_payload["jti"]
     token_in_redis = jwt_redis_blocklist.get(jti)
     return token_in_redis is not None
 
-# 20220104 Add feature:revoke token
 @app.route("/logout", methods=["DELETE"])
 @jwt_required()
 def logout():
+    """Endpoint for user logout
+    This is using docstrings for specifications.
+    ---
+    tags:
+      - 'User'
+    security:
+      - Bearer: []
+    responses:
+      200:
+        description: User logout successfully message
+        schema:
+          $ref: '#/definitions/register_successfully_message'
+        examples:
+          application/json: { "message": "Access token revoked" }
+    """
     jti = get_jwt()["jti"]
     jwt_redis_blocklist.set(jti, "", ex=ACCESS_EXPIRES)
     return jsonify(message="Access token revoked")
-'''
 
 @app.route('/forgot', methods=['POST'])
 def forgot_password():
