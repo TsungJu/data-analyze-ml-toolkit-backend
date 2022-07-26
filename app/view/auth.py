@@ -168,7 +168,7 @@ def login():
 #jwt_redis_blocklist = redis.StrictRedis(
 #    host="localhost",port=6379,db=0,decode_responses=True
 #)
-jwt_redis_blocklist = redis.Redis.from_url(app.config['REDIS_URL'])
+jwt_redis_blocklist = redis.Redis.from_url(app.config['REDISDB_URL'])
 
 @jwt.token_in_blocklist_loader
 def check_if_token_is_revoked(jwt_header, jwt_payload):
