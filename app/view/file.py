@@ -16,7 +16,7 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.',1)[1].lower() in ALLOWED_EXTENSIONS
 
-@app.route('/upload', methods=['POST'])
+@app.route('/api/upload', methods=['POST'])
 @jwt_required()
 def upload_file():
     """Endpoint for upload csv file and analyzing data
@@ -71,7 +71,7 @@ def upload_file():
 
     # return render_template('upload.html')
 
-@app.route('/uploaded',methods=['GET'])
+@app.route('/api/uploaded',methods=['GET'])
 @jwt_required()
 def uploaded():
     """Endpoint for list uploaded file
@@ -104,7 +104,7 @@ def uploaded():
     files = listdir(path)
     return jsonify(message=files), 200
 
-@app.route('/download/<filename>', methods=['GET'])
+@app.route('/api/download/<filename>', methods=['GET'])
 @jwt_required()
 def download(filename):
     """Endpoint for download file
@@ -143,7 +143,7 @@ def download(filename):
       return jsonify(message=filename+" not found"), 404
     return send_from_directory(path,filename, as_attachment=True)
 
-@app.route('/delete/<filename>', methods=['DELETE'])
+@app.route('/api/delete/<filename>', methods=['DELETE'])
 @jwt_required()
 def delete(filename):
     """Endpoint for delete file

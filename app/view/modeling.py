@@ -26,7 +26,7 @@ def path_get(filename):
       return jsonify(message=filename+" not found"), 404
     return path,first_name
 
-@app.route('/linear_regression/<filename>',methods=['POST'])
+@app.route('/api/linear_regression/<filename>',methods=['POST'])
 @jwt_required()
 def linear_regression(filename):
     """Endpoint for input csv file、x、y、modeling and dump linear regression
@@ -86,7 +86,7 @@ def linear_regression(filename):
     joblib.dump(model,path+filename.split('.')[0]+'_'+'LR_model')
     return jsonify(message=filename.split('.')[0]+'_'+'LR_model'+" build successfully",correlation=model.coef_.tolist()), 200
 
-@app.route('/multi_regression/<filename>',methods=['POST'])
+@app.route('/api/multi_regression/<filename>',methods=['POST'])
 @jwt_required()
 def multi_regression(filename):
     """Endpoint for input csv file、X、y、modeling and dump Multiple regression
@@ -147,7 +147,7 @@ def multi_regression(filename):
     joblib.dump(model,path+filename.split('.')[0]+'_'+'MR_model')
     return jsonify(message=filename.split('.')[0]+'_'+'MR_model'+" build successfully",coefficient=model.coef_.tolist()), 200
 
-@app.route('/poly_regression/<filename>',methods=['POST'])
+@app.route('/api/poly_regression/<filename>',methods=['POST'])
 @jwt_required()
 def poly_regression(filename):
     """Endpoint for input csv file、X、y、modeling and dump Multiple regression
@@ -206,7 +206,7 @@ def poly_regression(filename):
     joblib.dump(model,path+filename.split('.')[0]+'_'+'PR_model')
     return jsonify(message=filename.split('.')[0]+'_'+'PR_model'+" build successfully",r2_score=r2_score(df[y],model(df[x]))), 200
 
-@app.route('/decision_tree/<filename>', methods=['POST'])
+@app.route('/api/decision_tree/<filename>', methods=['POST'])
 @jwt_required()
 def decision_tree(filename):
     """Endpoint for input csv file、features、y、modeling and dump decision tree

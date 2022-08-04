@@ -19,7 +19,7 @@ def path_get(filename):
       return jsonify(message=filename+" not found"), 404
     return path,first_name
 
-@app.route('/info/<filename>',methods=['GET'])
+@app.route('/api/info/<filename>',methods=['GET'])
 @jwt_required()
 def info(filename):
     """Endpoint for analyzing csv file and return csv info
@@ -61,7 +61,7 @@ def info(filename):
     info = buffer.getvalue().split('\n')
     return jsonify(message="csv info get successfully",info=info), 200
 
-@app.route('/correlation/<filename>',methods=['GET'])
+@app.route('/api/correlation/<filename>',methods=['GET'])
 @jwt_required()
 def correlation(filename):
     """Endpoint for analyzing csv file and return correlation
@@ -101,7 +101,7 @@ def correlation(filename):
     corr = df.corr().to_json()
     return jsonify(message="correlation get successfully",corr=corr), 200
 
-@app.route('/diagram_plot/<filename>',methods=['GET'])
+@app.route('/api/diagram_plot/<filename>',methods=['GET'])
 @jwt_required()
 def plotting(filename):
     """Endpoint for input csv file、save and return diagram
@@ -138,9 +138,9 @@ def plotting(filename):
     df = pd.read_csv(os.path.join(path,filename))
     df.plot()
     plt.savefig(os.path.join(path,filename.split('.')[0]+"_diagram.png"))
-    return send_file('data\\'+first_name+'\\'+filename.split('.')[0]+"_diagram.png", mimetype='image/png')
+    return send_file('data/'+first_name+'/'+filename.split('.')[0]+"_diagram.png", mimetype='image/png')
 
-@app.route('/scatter_plot/<filename>',methods=['POST'])
+@app.route('/api/scatter_plot/<filename>',methods=['POST'])
 @jwt_required()
 def scatter_plot(filename):
     """Endpoint for input csv file、x axis、y axis、save and return scatter plot 
@@ -187,9 +187,9 @@ def scatter_plot(filename):
     df = pd.read_csv(os.path.join(path,filename))
     df.plot(kind = 'scatter',x=x,y=y)
     plt.savefig(os.path.join(path,filename.split('.')[0]+"_x_"+x+"_y_"+y+"_scatter.png"))
-    return send_file('data\\'+first_name+'\\'+filename.split('.')[0]+"_x_"+x+"_y_"+y+"_scatter.png", mimetype='image/png')
+    return send_file('data/'+first_name+'/'+filename.split('.')[0]+"_x_"+x+"_y_"+y+"_scatter.png", mimetype='image/png')
 
-@app.route('/histogram_plot/<filename>',methods=['POST'])
+@app.route('/api/histogram_plot/<filename>',methods=['POST'])
 @jwt_required()
 def hist(filename):
     """Endpoint for input csv file、column、save and return histogram plot 
@@ -231,4 +231,4 @@ def hist(filename):
     df = pd.read_csv(os.path.join(path,filename))
     df[column].plot(kind = 'hist')
     plt.savefig(os.path.join(path,filename.split('.')[0]+"_"+column+"_histogram.png"))
-    return send_file('data\\'+first_name+'\\'+filename.split('.')[0]+"_"+column+"_histogram.png", mimetype='image/png')
+    return send_file('data/'+first_name+'/'+filename.split('.')[0]+"_"+column+"_histogram.png", mimetype='image/png')

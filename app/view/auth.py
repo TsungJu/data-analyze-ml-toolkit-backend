@@ -65,7 +65,7 @@ swagger_config = {
 }
 swagger = Swagger(app,template=swagger_template,config=swagger_config)
 
-@app.route('/register', methods=['POST'])
+@app.route('/api/register', methods=['POST'])
 def register():
     """Endpoint for user register
     This is using docstrings for specifications.
@@ -116,7 +116,7 @@ def register():
         user.insert_one(user_info)
         return jsonify(message="User Register Successfully"), 201
 
-@app.route('/login', methods=['POST'])
+@app.route('/api/login', methods=['POST'])
 def login():
     """Endpoint for user login
     This is using docstrings for specifications.
@@ -176,7 +176,7 @@ def check_if_token_is_revoked(jwt_header, jwt_payload):
     token_in_redis = jwt_redis_blocklist.get(jti)
     return token_in_redis is not None
 
-@app.route("/logout", methods=["DELETE"])
+@app.route("/api/logout", methods=["DELETE"])
 @jwt_required()
 def logout():
     """Endpoint for user logout
@@ -198,7 +198,7 @@ def logout():
     jwt_redis_blocklist.set(jti, "", ex=ACCESS_EXPIRES)
     return jsonify(message="Access token revoked")
 
-@app.route('/forgot', methods=['POST'])
+@app.route('/api/forgot', methods=['POST'])
 def forgot_password():
     """Endpoint for user forgot password
     This is using docstrings for specifications.
@@ -238,7 +238,7 @@ def forgot_password():
         reset_token = create_access_token(identity=email)
         return jsonify(reset_token=reset_token), 201
 
-@app.route('/reset',methods=['POST'])
+@app.route('/api/reset',methods=['POST'])
 def reset_password():
     """Endpoint for user reset password
     This is using docstrings for specifications.
