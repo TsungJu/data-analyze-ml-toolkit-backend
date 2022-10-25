@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import sys
 from .. import app, user
 
-ALLOWED_EXTENSIONS = {'csv'}
+ALLOWED_EXTENSIONS = {'csv','png'}
 app.config['UPLOAD_FOLDER'] = 'app/data/'
 app.config['DOWNLOAD_FOLDER'] = 'data/'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
@@ -70,6 +70,34 @@ def upload_file():
             #return redirect(url_for('uploaded_file',filename=filename))
 
     # return render_template('upload.html')
+
+@app.route('/api/guest/<first_name>/upload', methods=['POST'])
+def guest_upload_file(first_name):
+    if request.method == 'POST':
+        if 'file' not in request.files:
+            return jsonify(message="No file part"), 400
+    
+        file = request.files['file']
+        
+        if file.filename == '':
+            return jsonify(message="No selected file"), 400
+
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            path= app.config['UPLOAD_FOLDER']+"/guest/"+first_name+'/'
+            if not os.path.exists(path):
+                os.makedirs(path)
+            file.save(os.path.join(path,filename))
+            fileList = listdir(path)
+            return jsonify(message=filename+" Upload successfully",filelist=fileList), 201
+
+@app.route('/api/guest/<first_name>/uploaded',methods=['GET'])
+def guest_uploaded(first_name):
+    path = app.config['UPLOAD_FOLDER']+"/guest/"+first_name+'/'
+    if not os.path.exists(path):
+      os.makedirs(path)
+    files = listdir(path)
+    return jsonify(filelist=files), 200
 
 @app.route('/api/uploaded',methods=['GET'])
 @jwt_required()
