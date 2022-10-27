@@ -9,7 +9,6 @@ import sys
 from .. import app, user
 
 ALLOWED_EXTENSIONS = {'csv','png'}
-app.config['UPLOAD_FOLDER'] = 'app/data/'
 app.config['DOWNLOAD_FOLDER'] = 'data/'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 
@@ -98,6 +97,16 @@ def guest_uploaded(first_name):
       os.makedirs(path)
     files = listdir(path)
     return jsonify(filelist=files), 200
+
+@app.route('/api/guest/<first_name>/delete/<filename>', methods=['DELETE'])
+@jwt_required()
+def delete(first_name,filename):
+    path = app.config['UPLOAD_FOLDER']+"/guest/"+first_name+'/'
+    if os.path.exists(path):
+      os.remove(path+filename)
+      return jsonify(message=filename+" Delete successfully"), 200
+    else:
+      return jsonify(message=first_name+" folder not found"), 404
 
 @app.route('/api/uploaded',methods=['GET'])
 @jwt_required()
