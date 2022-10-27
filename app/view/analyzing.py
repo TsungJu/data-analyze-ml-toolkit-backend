@@ -7,8 +7,6 @@ import matplotlib.pyplot as plt
 plt.switch_backend('agg')
 from .. import app, user
 
-app.config['UPLOAD_FOLDER'] = 'app/data/'
-
 def path_get(filename):
     filename = secure_filename(filename)
     token = request.headers['Authorization'].split(' ')[1]
