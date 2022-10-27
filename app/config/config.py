@@ -15,8 +15,8 @@ class DevelopmentConfigDocker:
 class ProductionConfig:
     DATABASE_URL = 'mongodb+srv://leolee:su3cp3gj94@cluster0.slk3i.mongodb.net/app_database?retryWrites=true&w=majority'
     SWAGGER_HOST = 'data-analyze-ml-toolset-backend.azurewebsites.net'
-    REDISDB_URL = os.environ['REDIS_URL']
-    UPLOAD_FOLDER = 'app/data/'
+    REDISDB_URL = 'redis://:@redis-dev:6379'
+    UPLOAD_FOLDER = '/home/app/data/'
 
 config = {
     'development' : DevelopmentConfig,

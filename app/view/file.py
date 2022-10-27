@@ -100,7 +100,7 @@ def guest_uploaded(first_name):
 
 @app.route('/api/guest/<first_name>/delete/<filename>', methods=['DELETE'])
 @jwt_required()
-def delete(first_name,filename):
+def guest_delete(first_name,filename):
     path = app.config['UPLOAD_FOLDER']+"/guest/"+first_name+'/'
     if os.path.exists(path):
       os.remove(path+filename)
