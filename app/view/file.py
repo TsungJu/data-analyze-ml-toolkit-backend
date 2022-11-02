@@ -99,7 +99,6 @@ def guest_uploaded(first_name):
     return jsonify(filelist=files), 200
 
 @app.route('/api/guest/<first_name>/delete/<filename>', methods=['DELETE'])
-@jwt_required()
 def guest_delete(first_name,filename):
     path = app.config['UPLOAD_FOLDER']+"/guest/"+first_name+'/'
     if os.path.exists(path):
