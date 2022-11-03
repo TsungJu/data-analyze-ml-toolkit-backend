@@ -1,5 +1,5 @@
 from flask_jwt_extended import jwt_required, decode_token
-from flask import jsonify, request, render_template, redirect, send_from_directory
+from flask import jsonify, request, render_template, redirect, send_from_directory,session
 from werkzeug.utils import secure_filename
 import os
 from os import listdir
@@ -92,6 +92,7 @@ def guest_upload_file(first_name):
 
 @app.route('/api/guest/<first_name>/uploaded',methods=['GET'])
 def guest_uploaded(first_name):
+    print(session['session'])
     path = app.config['UPLOAD_FOLDER']+"/guest/"+first_name+'/'
     if not os.path.exists(path):
       os.makedirs(path)
