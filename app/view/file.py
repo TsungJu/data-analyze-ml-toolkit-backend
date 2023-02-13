@@ -8,9 +8,9 @@ import matplotlib.pyplot as plt
 import sys
 from .. import app, user
 
-ALLOWED_EXTENSIONS = {'csv','png'}
+ALLOWED_EXTENSIONS = {'csv'}
 app.config['DOWNLOAD_FOLDER'] = 'data/'
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024 * 1024
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.',1)[1].lower() in ALLOWED_EXTENSIONS
@@ -96,7 +96,9 @@ def guest_uploaded(first_name):
     if not os.path.exists(path):
       os.makedirs(path)
     files = listdir(path)
-    return jsonify(filelist=files), 200
+    new_files=list(filter(lambda file: ".csv" in file,files))
+    print(new_files)
+    return jsonify(filelist=new_files), 200
 
 @app.route('/api/guest/<first_name>/delete/<filename>', methods=['DELETE'])
 def guest_delete(first_name,filename):

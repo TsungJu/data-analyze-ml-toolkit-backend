@@ -1,3 +1,4 @@
+from xml.etree.ElementInclude import include
 from flask_jwt_extended import jwt_required, decode_token
 from flask import jsonify, request, send_file
 from werkzeug.utils import secure_filename
@@ -5,6 +6,7 @@ import os, io
 import pandas as pd
 import matplotlib.pyplot as plt
 plt.switch_backend('agg')
+import plotly.express as px
 from .. import app, user
 
 def path_get(filename):
@@ -55,9 +57,10 @@ def info(filename):
     path,first_name = path_get(filename)
     df = pd.read_csv(os.path.join(path,filename))
     buffer = io.StringIO()
+    print(type(df.columns))
     df.info(buf=buffer)
     info = buffer.getvalue().split('\n')
-    return jsonify(message="csv info get successfully",info=info), 200
+    return jsonify(message="csv info get successfully",info=info,columns=df.columns.to_list()), 200
 
 @app.route('/api/correlation/<filename>',methods=['GET'])
 @jwt_required()
@@ -136,6 +139,9 @@ def plotting(filename):
     df = pd.read_csv(os.path.join(path,filename))
     df.plot()
     plt.savefig(os.path.join(path,filename.split('.')[0]+"_diagram.png"))
+    plt.close()
+    plt.cla()
+    plt.clf()
     return send_file('data/'+first_name+'/'+filename.split('.')[0]+"_diagram.png", mimetype='image/png')
 
 @app.route('/api/scatter_plot/<filename>',methods=['POST'])
@@ -185,6 +191,9 @@ def scatter_plot(filename):
     df = pd.read_csv(os.path.join(path,filename))
     df.plot(kind = 'scatter',x=x,y=y)
     plt.savefig(os.path.join(path,filename.split('.')[0]+"_x_"+x+"_y_"+y+"_scatter.png"))
+    plt.close()
+    plt.cla()
+    plt.clf()
     return send_file('data/'+first_name+'/'+filename.split('.')[0]+"_x_"+x+"_y_"+y+"_scatter.png", mimetype='image/png')
 
 @app.route('/api/histogram_plot/<filename>',methods=['POST'])
@@ -229,4 +238,30 @@ def hist(filename):
     df = pd.read_csv(os.path.join(path,filename))
     df[column].plot(kind = 'hist')
     plt.savefig(os.path.join(path,filename.split('.')[0]+"_"+column+"_histogram.png"))
+    plt.close()
+    plt.cla()
+    plt.clf()
     return send_file('data/'+first_name+'/'+filename.split('.')[0]+"_"+column+"_histogram.png", mimetype='image/png')
+
+
+@app.route('/api/guest/<first_name>/histogram_plot/<filename>',methods=['POST'])
+def guest_hist_plotly(first_name,filename):
+    column = request.form['column']
+    path = app.config['UPLOAD_FOLDER']+"guest/"+first_name+'/'
+    df = pd.read_csv(os.path.join(path,filename))
+    df[column].plot(kind = 'hist')
+    plt.savefig(os.path.join(path,filename.split('.')[0]+"_"+column+"_histogram.png"))
+    plt.close()
+    plt.cla()
+    plt.clf()
+    return send_file('data/guest/'+first_name+'/'+filename.split('.')[0]+"_"+column+"_histogram.png", mimetype='image/png')
+
+@app.route('/api/guest/<first_name>/info/<filename>',methods=['GET'])
+def guest_info(first_name,filename):
+    path = app.config['UPLOAD_FOLDER']+"guest/"+first_name+'/'
+    df = pd.read_csv(os.path.join(path,filename))
+    buffer = io.StringIO()
+    print(type(df.columns))
+    df.info(buf=buffer)
+    info = buffer.getvalue().split('\n')
+    return jsonify(message="csv info get successfully",info=info,columns=df.columns.to_list()), 200
