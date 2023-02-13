@@ -5,8 +5,8 @@ from flask_cors import CORS
 
 config_name = 'production'
 app = Flask(__name__)
-cors = CORS(app, supports_credentials=True)
 app.config.from_object(config[config_name])
+cors = CORS(app,origins=app.config['ORIGINS'])#, supports_credentials=True)
 
 # MongoDB create db and collection
 client = MongoClient(app.config['DATABASE_URL'])
