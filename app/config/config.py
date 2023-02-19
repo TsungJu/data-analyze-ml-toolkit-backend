@@ -5,6 +5,7 @@ class DevelopmentConfig:
     SWAGGER_HOST = 'localhost:5000'
     REDISDB_URL = 'redis://:@localhost:6379'
     UPLOAD_FOLDER = 'app/data/'
+    DOWNLOAD_FOLDER = 'data/'
     ORIGINS = 'http://localhost:5001'
 
 class DevelopmentConfigDocker:
@@ -12,6 +13,7 @@ class DevelopmentConfigDocker:
     SWAGGER_HOST = 'localhost:5000'
     REDISDB_URL = 'redis://:@redis-dev:6379'
     UPLOAD_FOLDER = 'app/data/'
+    DOWNLOAD_FOLDER = 'data/'
     ORIGINS = 'http://localhost:5001'
 
 class ProductionConfig:
@@ -19,6 +21,7 @@ class ProductionConfig:
     SWAGGER_HOST = 'data-analyze-ml-toolset-backend.azurewebsites.net'
     REDISDB_URL = os.environ['REDIS_URL']
     UPLOAD_FOLDER = '/home/app/data/'
+    DOWNLOAD_FOLDER = '/home/app/data/'
     ORIGINS = 'https://leoinventorydemo.azurewebsites.net'
 
 config = {

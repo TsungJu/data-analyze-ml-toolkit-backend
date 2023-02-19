@@ -9,7 +9,7 @@ import sys
 from .. import app, user
 
 ALLOWED_EXTENSIONS = {'csv'}
-app.config['DOWNLOAD_FOLDER'] = 'data/'
+#app.config['DOWNLOAD_FOLDER'] = 'data/'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024 * 1024
 
 def allowed_file(filename):

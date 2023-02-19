@@ -142,7 +142,7 @@ def plotting(filename):
     plt.close()
     plt.cla()
     plt.clf()
-    return send_file('data/'+first_name+'/'+filename.split('.')[0]+"_diagram.png", mimetype='image/png')
+    return send_file(app.config['DOWNLOAD_FOLDER']+first_name+'/'+filename.split('.')[0]+"_diagram.png", mimetype='image/png')
 
 @app.route('/api/scatter_plot/<filename>',methods=['POST'])
 @jwt_required()
@@ -194,7 +194,7 @@ def scatter_plot(filename):
     plt.close()
     plt.cla()
     plt.clf()
-    return send_file('data/'+first_name+'/'+filename.split('.')[0]+"_x_"+x+"_y_"+y+"_scatter.png", mimetype='image/png')
+    return send_file(app.config['DOWNLOAD_FOLDER']+first_name+'/'+filename.split('.')[0]+"_x_"+x+"_y_"+y+"_scatter.png", mimetype='image/png')
 
 @app.route('/api/histogram_plot/<filename>',methods=['POST'])
 @jwt_required()
@@ -241,7 +241,7 @@ def hist(filename):
     plt.close()
     plt.cla()
     plt.clf()
-    return send_file('data/'+first_name+'/'+filename.split('.')[0]+"_"+column+"_histogram.png", mimetype='image/png')
+    return send_file(app.config['DOWNLOAD_FOLDER']+first_name+'/'+filename.split('.')[0]+"_"+column+"_histogram.png", mimetype='image/png')
 
 
 @app.route('/api/guest/<first_name>/histogram_plot/<filename>',methods=['POST'])
@@ -254,7 +254,7 @@ def guest_hist_plotly(first_name,filename):
     plt.close()
     plt.cla()
     plt.clf()
-    return send_file('data/guest/'+first_name+'/'+filename.split('.')[0]+"_"+column+"_histogram.png", mimetype='image/png')
+    return send_file(app.config['DOWNLOAD_FOLDER']+"guest/"+first_name+'/'+filename.split('.')[0]+"_"+column+"_histogram.png", mimetype='image/png')
 
 @app.route('/api/guest/<first_name>/info/<filename>',methods=['GET'])
 def guest_info(first_name,filename):
