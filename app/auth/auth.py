@@ -1,71 +1,16 @@
 from flask import jsonify, request, url_for, render_template
-from flask_jwt_extended import JWTManager,jwt_required, create_access_token, decode_token, get_jwt
+from flask_jwt_extended import jwt_required, create_access_token, decode_token, get_jwt
 import bcrypt
 from jwt.exceptions import DecodeError, InvalidTokenError
-from flasgger import Swagger
 import datetime
-from datetime import timedelta
-from .. import app, user
+from .. import app, jwt, user
+from flask import Blueprint
+
+auth_blueprint = Blueprint('auth_blueprint', __name__)
 
 import redis
-ACCESS_EXPIRES = timedelta(hours=1)
-app.config["JWT_ACCESS_TOKEN_EXPIRES"] = ACCESS_EXPIRES
 
-# JWT config
-app.config["JWT_SECRET_KEY"] = "LEONARD-JWT-SECRET-KEY"
-jwt = JWTManager(app)
-
-swagger_template = dict(
-    info = {
-        'title':'flask jwt api Swagger UI Document',
-        'version':'0.1',
-        'description':'This document depicts a flask jwt api Swagger ui document.',
-    },
-    host = app.config['SWAGGER_HOST'],
-    tags = [
-        {
-            'name':'User',
-            'description':'User related Features'
-        },
-        {
-            'name':'File',
-            'description':'File related Features'
-        },
-        {
-            'name':'Analyzing',
-            'description':'Analyzing related Features'
-        },
-        {
-            'name':'Modeling',
-            'description':'Modeling related Features'
-        }
-    ],
-    securityDefinitions = {
-      'Bearer': {
-        'type':'apiKey',
-        'name':'Authorization',
-        'in':'header'
-      }
-    }
-)
-
-swagger_config = {
-    'headers':[],
-    'specs':[
-        {
-            'endpoint':'flask_jwt_api_swagger_ui',
-            'route':'/flask_jwt_api_swagger_ui.json',
-            'rule_filter': lambda rule: True,
-            'model_filter': lambda tag: True,
-        }
-    ],
-    'static_url_path':'/flasgger_static',
-    'swagger_ui': True,
-    'specs_route':'/apidocs/'
-}
-swagger = Swagger(app,template=swagger_template,config=swagger_config)
-
-@app.route('/api/register', methods=['POST'])
+@auth_blueprint.route('/api/register', methods=['POST'])
 def register():
     """Endpoint for user register
     This is using docstrings for specifications.
@@ -116,7 +61,7 @@ def register():
         user.insert_one(user_info)
         return jsonify(message="User Register Successfully"), 201
 
-@app.route('/api/login', methods=['POST'])
+@auth_blueprint.route('/api/login', methods=['POST'])
 def login():
     """Endpoint for user login
     This is using docstrings for specifications.
@@ -149,14 +94,13 @@ def login():
           application/json: { "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTY0NTA3NjUxMywianRpIjoiZDg3ODIyNzUtYWNjNC00NGNmLTgwZjYtMTVlM2QwMjQ1NzkyIiwidHlwZSI6ImFjY2VzcyIsInN1YiI6ImUyODUxNzFAaG90bWFpbC5jb20iLCJuYmYiOjE2NDUwNzY1MTMsImV4cCI6MTY0NTA4MDExM30.RC3kwHfQOXjL4WbWU2BL2W-82kP4BLsJsAKK35zflmI", "message": "Login Successfully" }
     """
     if request.is_json:
-        email = request.json["email"]
+        email = request.json["username"]
         password = request.json["password"]
     else:
         email = request.form["email"]
         password = request.form["password"]
 
     test = user.find_one({"email":email})
-    app.logger.info(test)
     if bcrypt.checkpw(password.encode('utf-8'), test['password']):
         access_token = create_access_token(identity=email)
         user.update_one({"email":email},{'$set':{"last_login":datetime.datetime.now()}})
@@ -176,7 +120,7 @@ def check_if_token_is_revoked(jwt_header, jwt_payload):
     token_in_redis = jwt_redis_blocklist.get(jti)
     return token_in_redis is not None
 
-@app.route("/api/logout", methods=["DELETE"])
+@auth_blueprint.route("/api/logout", methods=["DELETE"])
 @jwt_required()
 def logout():
     """Endpoint for user logout
@@ -195,10 +139,10 @@ def logout():
           application/json: { "message": "Access token revoked" }
     """
     jti = get_jwt()["jti"]
-    jwt_redis_blocklist.set(jti, "", ex=ACCESS_EXPIRES)
+    jwt_redis_blocklist.set(jti, "", ex=app.config["JWT_ACCESS_TOKEN_EXPIRES"])
     return jsonify(message="Access token revoked")
 
-@app.route('/api/forgot', methods=['POST'])
+@auth_blueprint.route('/api/forgot', methods=['POST'])
 def forgot_password():
     """Endpoint for user forgot password
     This is using docstrings for specifications.
@@ -238,7 +182,7 @@ def forgot_password():
         reset_token = create_access_token(identity=email)
         return jsonify(reset_token=reset_token), 201
 
-@app.route('/api/reset',methods=['POST'])
+@auth_blueprint.route('/api/reset',methods=['POST'])
 def reset_password():
     """Endpoint for user reset password
     This is using docstrings for specifications.
@@ -273,7 +217,6 @@ def reset_password():
     except InvalidTokenError:
         raise InvalidTokenError("InvalidTokenError")
 
-@app.route('/dashboard')
-@jwt_required()
+@auth_blueprint.route('/dashboard')
 def dashboard():
     return jsonify(message="Welcome!")

@@ -8,6 +8,9 @@ import matplotlib.pyplot as plt
 plt.switch_backend('agg')
 import plotly.express as px
 from .. import app, user
+from flask import Blueprint
+
+analyzing_blueprint = Blueprint('analyzing_blueprint', __name__)
 
 def path_get(filename):
     filename = secure_filename(filename)
@@ -19,7 +22,7 @@ def path_get(filename):
       return jsonify(message=filename+" not found"), 404
     return path,first_name
 
-@app.route('/api/info/<filename>',methods=['GET'])
+@analyzing_blueprint.route('/api/info/<filename>',methods=['GET'])
 @jwt_required()
 def info(filename):
     """Endpoint for analyzing csv file and return csv info
@@ -62,7 +65,7 @@ def info(filename):
     info = buffer.getvalue().split('\n')
     return jsonify(message="csv info get successfully",info=info,columns=df.columns.to_list()), 200
 
-@app.route('/api/correlation/<filename>',methods=['GET'])
+@analyzing_blueprint.route('/api/correlation/<filename>',methods=['GET'])
 @jwt_required()
 def correlation(filename):
     """Endpoint for analyzing csv file and return correlation
@@ -102,7 +105,7 @@ def correlation(filename):
     corr = df.corr().to_json()
     return jsonify(message="correlation get successfully",corr=corr), 200
 
-@app.route('/api/diagram_plot/<filename>',methods=['GET'])
+@analyzing_blueprint.route('/api/diagram_plot/<filename>',methods=['GET'])
 @jwt_required()
 def plotting(filename):
     """Endpoint for input csv file、save and return diagram
@@ -144,7 +147,7 @@ def plotting(filename):
     plt.clf()
     return send_file(app.config['DOWNLOAD_FOLDER']+first_name+'/'+filename.split('.')[0]+"_diagram.png", mimetype='image/png')
 
-@app.route('/api/scatter_plot/<filename>',methods=['POST'])
+@analyzing_blueprint.route('/api/scatter_plot/<filename>',methods=['POST'])
 @jwt_required()
 def scatter_plot(filename):
     """Endpoint for input csv file、x axis、y axis、save and return scatter plot 
@@ -196,7 +199,7 @@ def scatter_plot(filename):
     plt.clf()
     return send_file(app.config['DOWNLOAD_FOLDER']+first_name+'/'+filename.split('.')[0]+"_x_"+x+"_y_"+y+"_scatter.png", mimetype='image/png')
 
-@app.route('/api/histogram_plot/<filename>',methods=['POST'])
+@analyzing_blueprint.route('/api/histogram_plot/<filename>',methods=['POST'])
 @jwt_required()
 def hist(filename):
     """Endpoint for input csv file、column、save and return histogram plot 
@@ -243,8 +246,20 @@ def hist(filename):
     plt.clf()
     return send_file(app.config['DOWNLOAD_FOLDER']+first_name+'/'+filename.split('.')[0]+"_"+column+"_histogram.png", mimetype='image/png')
 
+# Because transfer size bigger than image/png, temp comment out
+'''
+@analyzing_blueprint.route('/api/guest/<first_name>/histogram_plotly/<filename>',methods=['POST'])
+def hist_plotly(first_name,filename):
+    x = request.form['column']
+    #y = request.form['y']
+    #path,first_name = path_get(filename)
+    path = app.config['UPLOAD_FOLDER']+"guest/"+first_name+'/'
+    df_data = pd.read_csv(os.path.join(path,filename))
+    fig = px.histogram(df_data, x=x)
+    return fig.to_html().split("<body>")[1].split("</body>")[0]
+'''
 
-@app.route('/api/guest/<first_name>/histogram_plot/<filename>',methods=['POST'])
+@analyzing_blueprint.route('/api/guest/<first_name>/histogram_plot/<filename>',methods=['POST'])
 def guest_hist_plotly(first_name,filename):
     column = request.form['column']
     path = app.config['UPLOAD_FOLDER']+"guest/"+first_name+'/'
@@ -256,7 +271,7 @@ def guest_hist_plotly(first_name,filename):
     plt.clf()
     return send_file(app.config['DOWNLOAD_FOLDER']+"guest/"+first_name+'/'+filename.split('.')[0]+"_"+column+"_histogram.png", mimetype='image/png')
 
-@app.route('/api/guest/<first_name>/info/<filename>',methods=['GET'])
+@analyzing_blueprint.route('/api/guest/<first_name>/info/<filename>',methods=['GET'])
 def guest_info(first_name,filename):
     path = app.config['UPLOAD_FOLDER']+"guest/"+first_name+'/'
     df = pd.read_csv(os.path.join(path,filename))
